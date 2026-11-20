@@ -1,0 +1,39 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    loadbalancer:
+      cache:
+        enabled: false
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 10s
+          routes:
+            - id: ocorrencias
+              uri: lb://ocorrencias-service
+              predicates:
+                - Path=/api/v1/ocorrencias,/api/v1/ocorrencias/**,/docs/ocorrencias/**
+            - id: atendimentos
+              uri: lb://atendimentos-service
+              predicates:
+                - Path=/api/v1/atendimentos,/api/v1/atendimentos/**,/docs/atendimentos/**
+
+eureka:
+  client:
+    register-with-eureka: false
+    disable-delta: true
+    registry-fetch-interval-seconds: 5
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

@@ -1,0 +1,84 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: atendimentos-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3308/cidadeativa_atendimentos?connectionTimeZone=UTC&sslMode=DISABLED&allowPublicKeyRetrieval=true}
+    username: ${DB_USER:cidadeativa}
+    password: ${DB_PASSWORD:atendimentos_dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  cloud:
+    loadbalancer:
+      cache:
+        enabled: false
+      retry:
+        enabled: false
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          ocorrencias-service:
+            connectTimeout: 1000
+            readTimeout: 2000
+    circuitbreaker:
+      resilience4j:
+        disable-time-limiter: true
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 4
+        minimum-number-of-calls: 4
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 2
+        ignore-exceptions:
+          - 'feign.FeignException$NotFound'
+          - 'feign.FeignException$Conflict'
+          - 'feign.FeignException$BadRequest'
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.uuid}
+    lease-renewal-interval-in-seconds: 5
+    status-page-url-path: /api/v1/atendimentos
+  client:
+    disable-delta: true
+    registry-fetch-interval-seconds: 5
+    initial-instance-info-replication-interval-seconds: 5
+    healthcheck:
+      enabled: true
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+
+springdoc:
+  packages-to-scan: br.com.fiap.cidadeativa.atendimentos.controller
+  override-with-generic-response: false
+  api-docs:
+    path: /docs/atendimentos/openapi
+  swagger-ui:
+    path: /docs/atendimentos/swagger.html
+    disable-swagger-default-url: true
